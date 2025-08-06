@@ -1,0 +1,9 @@
+{
+    "servers": {
+        "products-mcp-server": {
+            "command": "python",
+            "args": ["C:\\NTT-Sreenivasulu\\OpenAPI_mcp\\mcp-server\\main.py"]
+        }
+    },
+    "inputs": [],
+}
