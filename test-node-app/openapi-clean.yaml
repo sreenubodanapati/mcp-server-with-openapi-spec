@@ -1,0 +1,476 @@
+openapi: 3.0.3
+info:
+  title: Product CRUD REST API
+  description: A comprehensive CRUD REST API for managing products built with Node.js, Express.js, and MongoDB.
+  version: 1.0.0
+  contact:
+    name: Product API Support
+    email: support@productapi.com
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+tags:
+  - name: Products
+    description: Product management operations
+  - name: Health
+    description: API health check endpoints
+
+paths:
+  /:
+    get:
+      tags:
+        - Health
+      summary: API Information
+      description: Get basic API information and available endpoints
+      responses:
+        '200':
+          description: API information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Welcome to Product CRUD API
+                  documentation:
+                    type: string
+                    example: http://localhost:3000/api-docs
+                  endpoints:
+                    type: object
+
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Retrieve a paginated list of products with optional filtering and sorting
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: category
+          in: query
+          description: Filter products by category
+          required: false
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          description: Field to sort by
+          required: false
+          schema:
+            type: string
+            enum: [name, price, category, stock, createdAt, updatedAt]
+            default: createdAt
+        - name: order
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 50
+                  page:
+                    type: integer
+                    example: 1
+                  pages:
+                    type: integer
+                    example: 5
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - Products
+      summary: Create a new product
+      description: Create a new product with the provided information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+            examples:
+              electronics:
+                summary: Electronics product example
+                value:
+                  name: iPhone 15 Pro
+                  description: Latest iPhone with advanced camera and A17 Pro chip
+                  price: 1199.99
+                  category: Electronics
+                  stock: 50
+                  imageUrl: https://example.com/iphone15pro.jpg
+                  isActive: true
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Retrieve a specific product by its MongoDB ObjectId
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: MongoDB ObjectId of the product
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 60d5ecb74f123c001f8b4567
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Products
+      summary: Update product by ID
+      description: Update an existing product with new information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: MongoDB ObjectId of the product
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 60d5ecb74f123c001f8b4567
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateInput'
+            examples:
+              price_update:
+                summary: Update price and stock
+                value:
+                  price: 999.99
+                  stock: 75
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product by ID
+      description: Permanently delete a product from the database
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: MongoDB ObjectId of the product
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 60d5ecb74f123c001f8b4567
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    example: {}
+                  message:
+                    type: string
+                    example: Product deleted successfully
+        '400':
+          $ref: '#/components/responses/InvalidId'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - _id
+        - name
+        - description
+        - price
+        - category
+        - stock
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        _id:
+          type: string
+          description: MongoDB ObjectId
+          example: 60d5ecb74f123c001f8b4567
+        name:
+          type: string
+          description: Product name
+          maxLength: 100
+          example: iPhone 15 Pro
+        description:
+          type: string
+          description: Product description
+          maxLength: 500
+          example: Latest iPhone with advanced camera and A17 Pro chip
+        price:
+          type: number
+          description: Product price
+          minimum: 0
+          example: 1199.99
+        category:
+          type: string
+          description: Product category
+          example: Electronics
+        stock:
+          type: integer
+          description: Available stock quantity
+          minimum: 0
+          example: 50
+        imageUrl:
+          type: string
+          description: URL to product image
+          nullable: true
+          example: https://example.com/iphone15pro.jpg
+        isActive:
+          type: boolean
+          description: Whether the product is active
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Product creation timestamp
+          example: 2023-12-01T10:30:00.000Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: 2023-12-01T10:30:00.000Z
+
+    ProductInput:
+      type: object
+      required:
+        - name
+        - description
+        - price
+        - category
+      properties:
+        name:
+          type: string
+          description: Product name
+          maxLength: 100
+          example: iPhone 15 Pro
+        description:
+          type: string
+          description: Product description
+          maxLength: 500
+          example: Latest iPhone with advanced camera and A17 Pro chip
+        price:
+          type: number
+          description: Product price
+          minimum: 0
+          example: 1199.99
+        category:
+          type: string
+          description: Product category
+          example: Electronics
+        stock:
+          type: integer
+          description: Available stock quantity
+          minimum: 0
+          default: 0
+          example: 50
+        imageUrl:
+          type: string
+          description: URL to product image
+          example: https://example.com/iphone15pro.jpg
+        isActive:
+          type: boolean
+          description: Whether the product is active
+          default: true
+          example: true
+
+    ProductUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Product name
+          maxLength: 100
+          example: iPhone 15 Pro Max
+        description:
+          type: string
+          description: Product description
+          maxLength: 500
+          example: Updated iPhone with larger screen
+        price:
+          type: number
+          description: Product price
+          minimum: 0
+          example: 1299.99
+        category:
+          type: string
+          description: Product category
+          example: Electronics
+        stock:
+          type: integer
+          description: Available stock quantity
+          minimum: 0
+          example: 30
+        imageUrl:
+          type: string
+          description: URL to product image
+          example: https://example.com/iphone15promax.jpg
+        isActive:
+          type: boolean
+          description: Whether the product is active
+          example: true
+
+    Error:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          example: Error message
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InvalidId:
+      description: Invalid MongoDB ObjectId
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: Invalid product ID
+
+    ProductNotFound:
+      description: Product not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: Product not found
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error: Server Error
